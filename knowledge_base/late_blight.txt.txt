@@ -1,0 +1,105 @@
+DISEASE: Tomato Late Blight
+
+CATEGORY: Tomato Plant Disease
+
+1. OVERVIEW
+
+Late Blight is a destructive tomato disease caused by Phytophthora infestans. It is an oomycete (water mold), not a true fungus.
+
+The disease can spread rapidly under cool, humid and wet environmental conditions. It can affect leaves, stems and tomato fruits.
+
+2. SYMPTOMS
+
+- Irregular, water-soaked green or dark patches appear on leaves.
+- Infected areas gradually turn brown or black.
+- White growth may appear on the underside of infected leaves under humid conditions.
+- Stems may develop dark brown or black lesions.
+- Fruits can develop firm, brown, irregular lesions.
+- Severe infections can destroy large portions of the plant.
+
+3. FAVORABLE CONDITIONS
+
+- Cool temperatures.
+- High humidity.
+- Frequent rainfall.
+- Heavy dew.
+- Prolonged leaf wetness.
+- Poor air circulation.
+
+4. DISEASE SPREAD
+
+Phytophthora infestans spreads through spores carried by wind, rain and water.
+
+Infected tomato plants, potato plants, volunteer plants and infected planting materials can contribute to disease spread.
+
+5. MANAGEMENT AND TREATMENT
+
+- Regularly inspect tomato plants for suspicious symptoms.
+- Remove infected plant material carefully.
+- Avoid moving infected plant debris between fields.
+- Maintain sufficient spacing between plants.
+- Improve air circulation.
+- Avoid overhead irrigation where possible.
+- Remove volunteer potato and tomato plants that may act as disease sources.
+- Use disease-free transplants.
+- Consider locally suitable tolerant varieties where available.
+- Consult an agricultural specialist about appropriate fungicide options.
+- Use only products registered for the crop and disease in the local area.
+- Follow the pesticide label, protective equipment requirements and pre-harvest interval.
+
+6. PREVENTION
+
+- Use healthy transplants.
+- Monitor plants frequently during wet weather.
+- Maintain good field sanitation.
+- Avoid excessive leaf wetness.
+- Practice suitable crop rotation.
+- Remove infected crop debris.
+- Maintain adequate spacing and airflow.
+- Monitor nearby potato and tomato crops for disease outbreaks.
+
+7. IMPORTANT DIFFERENCE: EARLY BLIGHT VS LATE BLIGHT
+
+Early Blight:
+- Usually produces brown spots with concentric rings.
+- Commonly starts on older lower leaves.
+- Caused by Alternaria species.
+
+Late Blight:
+- Produces irregular, water-soaked dark lesions.
+- Can spread very rapidly in favorable weather.
+- Caused by Phytophthora infestans.
+
+8. IMPORTANT NOTE
+
+Late Blight can resemble other tomato diseases. A visual prediction alone cannot confirm the disease with certainty.
+
+If symptoms are unclear or the disease is spreading rapidly, consult an agricultural specialist or plant pathologist.
+
+SOURCES AND REFERENCES
+
+1. CABI Plantwise:
+Pakistan-relevant late blight farmer factsheet.
+https://factsheetadmin.plantwise.org/Uploads/PDFs/20157800171.pdf
+
+2. University of Connecticut Extension:
+Tomato Late Blight.
+https://ipm.cahnr.uconn.edu/tomato-late-blight/
+
+3. University of California Agriculture and Natural Resources:
+Late Blight in Tomato.
+https://ipm.ucanr.edu/agriculture/tomato/late-blight/
+
+4. CABI:
+Integrated Management of Tomato Leaf Miner – Extension Worker Manual.
+https://site.cabi.org/wp-content/uploads/TUTA-Extension-Worker-Manual-FINAL.pdf
+
+5. University of Wisconsin Extension:
+Late Blight Information.
+https://barron.extension.wisc.edu/files/2023/02/Tomato-Late-Blight.pdf
+
+REFERENCE NOTE
+
+Agricultural recommendations can vary according to climate, location, disease severity and pesticide registration.
+
+Local agricultural authorities should be consulted before applying chemical treatments.

@@ -1,0 +1,901 @@
+# ============================================================
+# PLANTPULSE - COMPLETE INITIALIZATION AND INFERENCE
+# Run this file after restarting the Jupyter kernel.
+#
+# In Jupyter:
+#   exec(open(r"C:\Users\haneef\Desktop\PlantPulse\plantpulse_setup.py.txt",
+#             encoding="utf-8").read())
+#
+# This file LOADS existing saved assets. It does NOT retrain the model
+# or rebuild the ChromaDB collection.
+# ============================================================
+
+
+# ============================================================
+# 1. IMPORTS
+# ============================================================
+
+import os
+import re
+import json
+import numpy as np
+import tensorflow as tf
+import chromadb
+
+from PIL import Image
+from sentence_transformers import SentenceTransformer
+from llama_cpp import Llama
+
+
+# ============================================================
+# 2. PROJECT PATHS AND SETTINGS
+# ============================================================
+
+PROJECT_PATH = r"C:\Users\haneef\Desktop\PlantPulse"
+
+MODELS_PATH = os.path.join(PROJECT_PATH, "models")
+CHROMA_PATH = os.path.join(PROJECT_PATH, "chroma_db")
+KNOWLEDGE_PATH = os.path.join(PROJECT_PATH, "knowledge_base")
+
+MODEL_PATH = os.path.join(
+    MODELS_PATH,
+    "plantpulse_efficientnetb0.keras"
+)
+
+CLASS_NAMES_PATH = os.path.join(
+    MODELS_PATH,
+    "class_names.json"
+)
+
+LLM_PATH = os.path.join(
+    MODELS_PATH,
+    "Llama-3.2-1B-Instruct-Q5_K_M.gguf"
+)
+
+COLLECTION_NAME = "plantpulse_knowledge"
+
+IMAGE_SIZE = (224, 224)
+CONFIDENCE_THRESHOLD = 80.0
+
+# ChromaDB cosine distance: smaller is more similar.
+# This is a provisional threshold and should be evaluated against
+# representative questions, not treated as a calibrated probability.
+RAG_DISTANCE_THRESHOLD = 0.65
+
+RAG_TOP_K = 20
+RAG_MAX_CONTEXT_CHUNKS = 5
+
+
+# ============================================================
+# 3. CHECK REQUIRED FILES AND FOLDERS
+# ============================================================
+
+required_paths = {
+    "Project folder": PROJECT_PATH,
+    "Models folder": MODELS_PATH,
+    "Trained EfficientNet model": MODEL_PATH,
+    "Class names JSON": CLASS_NAMES_PATH,
+    "Llama GGUF model": LLM_PATH,
+    "ChromaDB folder": CHROMA_PATH,
+}
+
+missing_paths = [
+    label for label, path in required_paths.items()
+    if not os.path.exists(path)
+]
+
+if missing_paths:
+    raise FileNotFoundError(
+        "PlantPulse cannot initialize. Missing required items:\n- "
+        + "\n- ".join(missing_paths)
+    )
+
+
+# ============================================================
+# 4. LOAD EFFICIENTNET-B0
+# ============================================================
+
+print("Loading EfficientNet-B0...")
+
+model = tf.keras.models.load_model(MODEL_PATH)
+
+print("EfficientNet-B0 loaded.")
+
+
+# ============================================================
+# 5. LOAD CLASS NAMES
+# ============================================================
+
+print("Loading class names...")
+
+with open(CLASS_NAMES_PATH, "r", encoding="utf-8") as file:
+    class_names = json.load(file)
+
+if not isinstance(class_names, list) or len(class_names) != 3:
+    raise ValueError(
+        "class_names.json should contain the three trained class names."
+    )
+
+print("Class names:", class_names)
+
+
+# ============================================================
+# 6. LOAD SENTENCE-TRANSFORMER EMBEDDING MODEL
+# ============================================================
+
+print("Loading embedding model...")
+
+embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+
+print("Embedding model loaded.")
+
+
+# ============================================================
+# 7. CONNECT TO THE EXISTING CHROMADB COLLECTION
+# ============================================================
+
+print("Connecting to ChromaDB...")
+
+client = chromadb.PersistentClient(path=CHROMA_PATH)
+
+try:
+    collection = client.get_collection(name=COLLECTION_NAME)
+except Exception as error:
+    raise RuntimeError(
+        f"ChromaDB collection '{COLLECTION_NAME}' was not found. "
+        "Check the chroma_db folder and collection name. "
+        "Do not delete the database. Original error: "
+        + str(error)
+    )
+
+if collection.count() == 0:
+    raise RuntimeError(
+        "The PlantPulse ChromaDB collection exists but contains no chunks."
+    )
+
+print("ChromaDB connected.")
+print("Knowledge chunks:", collection.count())
+
+
+# ============================================================
+# 8. LOAD LOCAL LLAMA MODEL
+# ============================================================
+
+print("Loading local Llama model. This may take a little time...")
+
+llm = Llama(
+    model_path=LLM_PATH,
+    n_ctx=2048,
+    n_threads=4,
+    n_gpu_layers=0,
+    verbose=False
+)
+
+print("Llama model loaded.")
+
+
+# ============================================================
+# 9. SOURCE REFERENCE FALLBACKS
+# Chroma metadata source_urls are preferred when available.
+# These URLs are fallbacks for the four curated knowledge categories.
+# ============================================================
+
+SOURCE_URLS = {
+    "early_blight": [
+        "https://extension.umd.edu/resource/early-blight-tomatoes",
+        "https://extension.umn.edu/agriculture/specialty-crops/vegetable-farming/disease-management/early-blight-in-tomato-and-potato",
+        "https://extension.colostate.edu/resource/tomato-early-blight/"
+    ],
+    "late_blight": [
+        "https://factsheetadmin.plantwise.org/Uploads/PDFs/20157800171.pdf",
+        "https://ipm.cahnr.uconn.edu/tomato-late-blight/",
+        "https://ipm.ucanr.edu/agriculture/tomato/late-blight/"
+    ],
+    "healthy_tomato": [
+        "https://extension.umd.edu/resource/growing-tomatoes-home-garden",
+        "https://extension.missouri.edu/publications/g6461",
+        "https://agri.sindh.gov.pk/Tomato-Crop",
+        "https://zarat.kp.gov.pk/crops/view_crop/5"
+    ],
+    "flower_drop": [
+        "https://gardening.usask.ca/articles-and-lists/articles-disorders/disorder-blossom-drop-in-tomatoes.php",
+        "https://extension.okstate.edu/fact-sheets/common-diseases-of-tomatoes-part-iii-non-infectious-diseases",
+        "https://extension.umd.edu/resource/problems-pollination-high-tunnel-tomatoes",
+        "https://extension.msstate.edu/publications/tomato-troubles-common-problems-tomatoes?page=9",
+        "https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/yard-and-garden-problems/how-excessive-heat-affects-vegetable-garden"
+    ]
+}
+
+
+# ============================================================
+# 10. DISEASE / TOPIC DETECTION
+# ============================================================
+
+def detect_disease_topic(question):
+    question = str(question).lower()
+
+    # Flower-drop questions take priority. A question about flowers
+    # should not be forced into the image classifier's disease category.
+    if any(term in question for term in [
+        "flower drop",
+        "flowers falling",
+        "flower falling",
+        "flowers dropping",
+        "blossom drop",
+        "blossoms falling",
+        "fruit set",
+        "tomato flowers"
+    ]):
+        return "flower_drop"
+
+    # Classifier output names
+    if "tomato___early_blight" in question:
+        return "early_blight"
+    elif "tomato___late_blight" in question:
+        return "late_blight"
+    elif "tomato___healthy" in question:
+        return "healthy_tomato"
+
+    # Disease names in ordinary questions
+    if "early blight" in question:
+        return "early_blight"
+    elif "late blight" in question:
+        return "late_blight"
+
+    # Characteristic symptom descriptions
+    if any(term in question for term in [
+        "concentric rings",
+        "circular brown spots",
+        "brown circular spots",
+        "older lower leaves"
+    ]):
+        return "early_blight"
+
+    if any(term in question for term in [
+        "water-soaked",
+        "water soaked",
+        "rapidly spreading dark lesions"
+    ]):
+        return "late_blight"
+
+    # General tomato plant care
+    if any(term in question for term in [
+        "healthy tomato",
+        "watering",
+        "irrigation",
+        "sunlight",
+        "soil",
+        "fertilizer",
+        "fertilization",
+        "plant care",
+        "tomato care",
+        "tomato crop",
+        "tomato plant",
+        "tomato plants"
+    ]):
+        return "healthy_tomato"
+
+    return None
+
+
+# ============================================================
+# 11. INTENT DETECTION
+# ============================================================
+
+def detect_intent(question):
+    question = str(question).lower()
+
+    # Flower-drop intents
+    flower_terms = [
+        "flower", "flowers", "blossom", "blossoms", "fruit set"
+    ]
+
+    if (
+        any(term in question for term in [
+            "manage", "management", "prevent",
+            "prevention", "avoid", "reduce", "control"
+        ])
+        and any(term in question for term in flower_terms)
+    ):
+        return "management and prevention"
+
+    if (
+        any(term in question for term in [
+            "water", "watering", "irrigation", "nitrogen",
+            "nutrient", "nutrition", "fertilizer", "fertilization"
+        ])
+        and any(term in question for term in flower_terms)
+    ):
+        return "water and nutrition"
+
+    if (
+        any(term in question for term in [
+            "temperature", "hot", "heat", "cold", "warm",
+            "night temperature", "day temperature"
+        ])
+        and any(term in question for term in flower_terms)
+    ):
+        return "temperature stress"
+
+    if any(term in question for term in [
+        "pollination", "pollen", "pollinate",
+        "self-pollination", "fruit formation"
+    ]):
+        return "pollination"
+
+    if (
+        any(term in question for term in [
+            "why", "cause", "causes", "reason", "reasons",
+            "flower drop", "blossom drop",
+            "flowers falling", "flowers dropping"
+        ])
+        and any(term in question for term in flower_terms)
+    ):
+        return "common causes"
+
+    # General intents
+    if any(term in question for term in [
+        "symptom", "symptoms", "sign", "signs",
+        "brown spots", "circular spots",
+        "yellow leaves", "yellowing",
+        "wilting", "discoloration",
+        "dark lesions", "water-soaked",
+        "dark patches", "lesions"
+    ]):
+        return "symptoms"
+
+    if any(term in question for term in [
+        "spread", "spreads", "spreading",
+        "transmission", "transmit"
+    ]):
+        return "disease spread"
+
+    if any(term in question for term in [
+        "cause", "causes", "caused by",
+        "reason", "reasons", "fungus",
+        "fungi", "pathogen", "responsible for", "why"
+    ]):
+        return "causes"
+
+    if any(term in question for term in [
+        "treat", "treatment", "manage",
+        "management", "control", "cure"
+    ]):
+        return "management and treatment"
+
+    if any(term in question for term in [
+        "prevent", "prevention", "avoid",
+        "protect", "protection"
+    ]):
+        return "prevention"
+
+    if any(term in question for term in [
+        "water", "watering", "irrigation"
+    ]):
+        return "watering"
+
+    if any(term in question for term in [
+        "sunlight", "sunlight hours"
+    ]):
+        return "sunlight"
+
+    if any(term in question for term in [
+        "soil", "drainage"
+    ]):
+        return "soil"
+
+    if any(term in question for term in [
+        "fertilizer", "fertilization",
+        "nutrition", "nutrients", "nitrogen"
+    ]):
+        return "fertilization"
+
+    if any(term in question for term in [
+        "spacing", "support", "pruning"
+    ]):
+        return "plant maintenance"
+
+    if any(term in question for term in [
+        "care", "tomato plants", "tomato crop"
+    ]):
+        return "general care"
+
+    return "general"
+
+
+# ============================================================
+# 12. AGRICULTURAL QUESTION VALIDATION
+# First uses clear keyword rules; Llama is only used for ambiguous
+# questions. This is a lightweight scope check, not a perfect classifier.
+# ============================================================
+
+def hybrid_agriculture_check(question):
+    question_lower = str(question).lower().strip()
+
+    non_agriculture_keywords = [
+        "recipe", "soup", "cooking", "cook",
+        "baking", "restaurant",
+        "capital of", "football", "fifa",
+        "world cup", "cricket", "basketball",
+        "tennis", "movie", "film", "actor",
+        "actress", "programming",
+        "javascript", "python code",
+        "video game", "music", "song",
+        "politics", "election", "president",
+        "celebrity"
+    ]
+
+    if any(term in question_lower for term in non_agriculture_keywords):
+        return "NOT_AGRICULTURE"
+
+    agriculture_keywords = [
+        "farming", "agriculture", "cultivation",
+        "crop disease", "plant disease",
+        "pest control", "soil fertility",
+        "irrigation", "fertilizer",
+        "pollination", "harvesting",
+        "plant growth", "leaf disease",
+        "tomato blight", "early blight",
+        "late blight", "plant roots",
+        "plant leaves", "tomato crop",
+        "tomato plant", "tomato plants",
+        "tomato flowers", "flower drop",
+        "blossom drop", "fruit set",
+        "healthy tomato", "plant watering",
+        "plant nutrition", "crop management",
+        "plant symptoms", "crop production",
+        "soil moisture", "plant sunlight"
+    ]
+
+    if any(term in question_lower for term in agriculture_keywords):
+        return "AGRICULTURE"
+
+    prompt = f"""
+You are a strict agricultural question classifier.
+
+AGRICULTURE means a question directly about farming, crops,
+plant health, plant diseases, soil, irrigation, fertilization,
+pollination, or agricultural practices.
+
+NOT_AGRICULTURE means unrelated topics such as sports,
+entertainment, programming, general knowledge, politics,
+cooking, and other unrelated subjects.
+
+If unclear, return NOT_AGRICULTURE.
+
+Return exactly one label:
+AGRICULTURE
+NOT_AGRICULTURE
+
+Question: {question}
+
+Label:
+"""
+
+    try:
+        response = llm(
+            prompt,
+            max_tokens=10,
+            temperature=0.0,
+            stop=["\n"]
+        )
+
+        result = response["choices"][0]["text"].strip().upper()
+
+        labels = re.findall(
+            r"\b(NOT_AGRICULTURE|AGRICULTURE)\b",
+            result
+        )
+
+        if not labels or len(set(labels)) > 1:
+            return "UNCERTAIN"
+
+        return labels[0]
+
+    except Exception as error:
+        print("Question classification error:", error)
+        return "UNCERTAIN"
+
+
+# ============================================================
+# 13. INTENT-TO-SECTION MAPPING
+# ============================================================
+
+SECTION_MAPPING = {
+    "symptoms": ["SYMPTOMS"],
+    "disease spread": ["DISEASE SPREAD"],
+    "causes": ["OVERVIEW", "FAVORABLE CONDITIONS"],
+    "management and treatment": ["MANAGEMENT AND TREATMENT"],
+    "prevention": ["PREVENTION", "DISEASE PREVENTION"],
+    "watering": ["WATERING AND IRRIGATION"],
+    "sunlight": ["SUNLIGHT REQUIREMENTS"],
+    "soil": ["SOIL REQUIREMENTS"],
+    "fertilization": ["NUTRITION AND FERTILIZATION"],
+    "plant maintenance": [
+        "PLANT SPACING AND SUPPORT",
+        "GENERAL PLANT MAINTENANCE"
+    ],
+    "general care": [
+        "OVERVIEW",
+        "GENERAL PLANT MAINTENANCE"
+    ],
+    "common causes": ["COMMON CAUSES"],
+    "temperature stress": ["TEMPERATURE STRESS"],
+    "pollination": ["POLLINATION PROBLEMS"],
+    "water and nutrition": ["WATER AND NUTRITIONAL STRESS"],
+    "management and prevention": ["MANAGEMENT AND PREVENTION"]
+}
+
+
+# ============================================================
+# 14. HELPER: GET SOURCE URLS FROM CHROMA METADATA
+# Supports metadata stored as a string or list, plus fallbacks.
+# ============================================================
+
+def get_source_urls(metadata, disease):
+    value = metadata.get("source_urls", [])
+
+    if isinstance(value, list):
+        urls = value
+    elif isinstance(value, str):
+        # Handles a single URL or URLs separated by commas/newlines.
+        urls = re.findall(r"https?://[^\s,\]]+", value)
+    else:
+        urls = []
+
+    urls = [
+        str(url).strip().rstrip(").,")
+        for url in urls
+        if str(url).strip().startswith("http")
+    ]
+
+    if not urls:
+        urls = SOURCE_URLS.get(disease, [])
+
+    # Remove duplicates while preserving order.
+    return list(dict.fromkeys(urls))
+
+
+# ============================================================
+# 15. RAG KNOWLEDGE RETRIEVAL
+# Rejects unsupported topics and prioritizes the detected intent.
+# ============================================================
+
+def retrieve_knowledge(
+    question,
+    threshold=RAG_DISTANCE_THRESHOLD,
+    top_k=RAG_TOP_K
+):
+    disease = detect_disease_topic(question)
+    intent = detect_intent(question)
+
+    print("Detected disease:", disease or "Unknown")
+    print("Detected intent:", intent)
+
+    if disease is None:
+        print("\nPlantPulse currently supports:")
+        print("- Early Blight")
+        print("- Late Blight")
+        print("- Healthy Tomato Care")
+        print("- Tomato Flower Drop")
+        print("\nI could not identify a supported topic.")
+        return None
+
+    query_embedding = embedding_model.encode(
+        [question]
+    ).tolist()
+
+    results = collection.query(
+        query_embeddings=query_embedding,
+        n_results=min(int(top_k), collection.count()),
+        where={"disease": disease},
+        include=["documents", "metadatas", "distances"]
+    )
+
+    documents = results.get("documents", [[]])[0]
+    metadatas = results.get("metadatas", [[]])[0]
+    distances = results.get("distances", [[]])[0]
+
+    candidates = []
+
+    for index, document in enumerate(documents):
+        metadata = metadatas[index] or {}
+        distance = float(distances[index])
+
+        if distance <= threshold:
+            candidates.append({
+                "document": document,
+                "metadata": metadata,
+                "distance": distance
+            })
+
+    if not candidates:
+        print("\nPlantPulse: Insufficient relevant evidence.")
+        print("Please consult an agricultural specialist.")
+        return None
+
+    preferred_sections = SECTION_MAPPING.get(intent, [])
+    print("Preferred sections:", preferred_sections)
+
+    # Put preferred sections first, then use cosine distance.
+    candidates.sort(
+        key=lambda item: (
+            item["metadata"].get("section", "") not in preferred_sections,
+            item["distance"]
+        )
+    )
+
+    selected = candidates[:RAG_MAX_CONTEXT_CHUNKS]
+
+    for index, item in enumerate(selected, start=1):
+        print("\nResult:", index)
+        print("Section:", item["metadata"].get("section", "Unknown"))
+        print("Source:", item["metadata"].get("source", "Unknown"))
+        print("Distance:", round(item["distance"], 4))
+        print(item["document"])
+        print("-" * 50)
+
+    return selected
+
+
+# ============================================================
+# 16. PREDICT DISEASE FROM A TOMATO LEAF IMAGE
+# EfficientNet preprocessing is already included in this model's
+# architecture; do not divide the input by 255 again here.
+# ============================================================
+
+def predict_disease(image_path, threshold=CONFIDENCE_THRESHOLD):
+    if not os.path.isfile(image_path):
+        raise FileNotFoundError(
+            "Image file not found: " + str(image_path)
+        )
+
+    try:
+        with Image.open(image_path) as image:
+            img = image.convert("RGB")
+            img = img.resize(IMAGE_SIZE)
+            img_array = np.asarray(img, dtype=np.float32)
+    except Exception as error:
+        raise ValueError(
+            "Could not open this image. Please use a valid JPG or PNG. "
+            + str(error)
+        )
+
+    img_array = np.expand_dims(img_array, axis=0)
+
+    predictions = model.predict(img_array, verbose=0)[0]
+
+    predicted_index = int(np.argmax(predictions))
+    confidence = float(predictions[predicted_index]) * 100.0
+    disease = class_names[predicted_index]
+
+    print("\n========== IMAGE PREDICTION ==========")
+    print("Predicted Disease:", disease)
+    print(f"Confidence: {confidence:.2f}%")
+
+    if confidence < threshold:
+        print("\nPlantPulse is not sufficiently confident.")
+        print("Please upload another clear tomato leaf image.")
+        print(f"Required threshold: {threshold:.2f}%")
+        return disease, confidence, False
+
+    return disease, confidence, True
+
+
+# ============================================================
+# 17. PLANTPULSE FARMER QUESTION / RAG / ANSWER
+# Uses retrieved knowledge as the factual basis.
+# If retrieval fails, it abstains instead of asking the small local
+# model to invent agricultural advice from its pretrained knowledge.
+# ============================================================
+
+def plantpulse_ask(disease, confidence, farmer_question):
+    print("\n========== PLANTPULSE RAG ==========")
+
+    retrieved_docs = retrieve_knowledge(farmer_question)
+
+    if not retrieved_docs:
+        print("\nPlantPulse: Relevant verified evidence is unavailable.")
+        print("I cannot provide a reliable evidence-based answer.")
+        print("Please consult a local agricultural specialist.")
+        return None
+
+    # Prefer chunks from the intended section when present.
+    intent = detect_intent(farmer_question)
+    preferred_sections = SECTION_MAPPING.get(intent, [])
+
+    preferred_docs = [
+        item for item in retrieved_docs
+        if item["metadata"].get("section", "") in preferred_sections
+    ]
+
+    # If the preferred section was not retrieved, use the best
+    # similarity-ranked evidence rather than returning zero documents.
+    evidence_docs = preferred_docs if preferred_docs else retrieved_docs
+    evidence_docs = evidence_docs[:RAG_MAX_CONTEXT_CHUNKS]
+
+    print("\nRelevant documents:", len(evidence_docs))
+
+    context_parts = []
+    all_urls = []
+
+    for index, item in enumerate(evidence_docs, start=1):
+        metadata = item["metadata"]
+        section = metadata.get("section", "Unknown")
+        source = metadata.get("source", "Unknown")
+
+        context_parts.append(
+            f"[Evidence {index} | Section: {section} | File: {source}]\n"
+            f"{item['document']}"
+        )
+
+        all_urls.extend(get_source_urls(metadata, detect_disease_topic(farmer_question)))
+
+    # Unique references
+    all_urls = list(dict.fromkeys(all_urls))
+
+    context = "\n\n".join(context_parts)
+
+    prompt = f"""
+You are PlantPulse, a cautious tomato-growing information assistant.
+
+Answer the farmer using ONLY the supplied knowledge-base evidence.
+Do not use outside facts from your pretrained knowledge.
+Do not add symptoms, causes, measurements, pesticide names, doses,
+application rates, or treatment instructions unless they appear in
+the supplied evidence.
+
+If the evidence does not answer part of the question, clearly say
+that the knowledge base does not provide enough information.
+Do not guess. Keep the answer clear and concise.
+Do not claim that an image prediction is a confirmed diagnosis.
+
+Classifier output: {disease}
+Classifier confidence: {confidence:.2f}%
+
+Farmer question:
+{farmer_question}
+
+Knowledge-base evidence:
+{context}
+
+Write a short answer grounded only in the evidence above.
+"""
+
+    print("\n========== EVIDENCE-BASED ANSWER ==========")
+
+    try:
+        response = llm(
+            prompt,
+            max_tokens=250,
+            temperature=0.1,
+            stop=["</s>", "Farmer question:"]
+        )
+
+        answer = response["choices"][0]["text"].strip()
+
+        if not answer:
+            answer = (
+                "The knowledge base contains relevant information, "
+                "but the language model did not produce an answer. "
+                "Please review the evidence below."
+            )
+
+    except Exception as error:
+        print("LLM answer generation failed:", error)
+        answer = (
+            "The knowledge base retrieved relevant information, "
+            "but answer generation failed. Please review the evidence below."
+        )
+
+    print(answer)
+
+    print("\n========== SUPPORTING REFERENCES ==========")
+
+    if all_urls:
+        for index, url in enumerate(all_urls, start=1):
+            print(f"{index}. {url}")
+    else:
+        print("No source URLs were stored for the retrieved chunks.")
+
+    print("\n========== IMPORTANT DISCLAIMER ==========")
+    print(
+        "PlantPulse provides decision-support information, not a "
+        "confirmed laboratory diagnosis. Follow local agricultural "
+        "guidance and consult a specialist when symptoms are severe "
+        "or unclear."
+    )
+
+    return {
+        "prediction": disease,
+        "confidence": confidence,
+        "question": farmer_question,
+        "answer": answer,
+        "evidence": evidence_docs,
+        "references": all_urls
+    }
+
+
+# ============================================================
+# 18. IMAGE ANALYSIS WRAPPER
+# ============================================================
+
+def plantpulse_analyze(image_path):
+    disease, confidence, accepted = predict_disease(image_path)
+    return disease, confidence, accepted
+
+
+# ============================================================
+# 19. MAIN PLANTPULSE FUNCTION
+# ============================================================
+
+def plantpulse(image_path, farmer_question):
+    if not isinstance(farmer_question, str) or not farmer_question.strip():
+        print("PlantPulse: Please enter an agricultural question.")
+        return None
+
+    print("\n========== QUESTION VALIDATION ==========")
+
+    validation = hybrid_agriculture_check(farmer_question)
+
+    print("Question classification:", validation)
+
+    if validation == "NOT_AGRICULTURE":
+        print("\nPlantPulse: This question is outside")
+        print("the scope of agricultural assistance.")
+        return None
+
+    if validation == "UNCERTAIN":
+        print("\nPlantPulse: I could not confidently classify")
+        print("this question. Please clarify it.")
+        return None
+
+    print("\n========== IMAGE ANALYSIS ==========")
+
+    disease, confidence, accepted = plantpulse_analyze(image_path)
+
+    if not accepted:
+        print("\n========== PLANTPULSE WARNING ==========")
+        print("The prediction did not meet the confidence threshold.")
+        print("Please try another clear tomato leaf image.")
+        return None
+
+    result = plantpulse_ask(
+        disease,
+        confidence,
+        farmer_question
+    )
+
+    return result
+
+
+# ============================================================
+# 20. INITIALIZATION SUMMARY
+# ============================================================
+
+print("\n==========================================")
+print("       PLANTPULSE INITIALIZED")
+print("==========================================")
+print("EfficientNet-B0: Loaded")
+print("Class names:", class_names)
+print("Embedding model: Loaded")
+print("ChromaDB: Connected")
+print("Knowledge chunks:", collection.count())
+print("Llama 3.2: Loaded")
+print("Confidence threshold:", CONFIDENCE_THRESHOLD, "%")
+print("RAG distance threshold:", RAG_DISTANCE_THRESHOLD)
+print("\nAvailable topic categories:")
+print("1. Early Blight")
+print("2. Late Blight")
+print("3. Healthy Tomato Care")
+print("4. Tomato Flower Drop")
+print("\nAvailable main functions:")
+print("1. predict_disease(image_path)")
+print("2. detect_disease_topic(question)")
+print("3. detect_intent(question)")
+print("4. hybrid_agriculture_check(question)")
+print("5. retrieve_knowledge(question)")
+print("6. plantpulse_ask(disease, confidence, farmer_question)")
+print("7. plantpulse(image_path, farmer_question)")
+print("\nPlantPulse is ready.")
+print("==========================================")

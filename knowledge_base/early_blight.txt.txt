@@ -1,0 +1,89 @@
+DISEASE: Tomato Early Blight
+
+CATEGORY: Tomato Plant Disease
+
+1. OVERVIEW
+
+Early Blight is a common fungal disease affecting tomato plants. It is mainly associated with Alternaria solani and Alternaria tomatophila. The disease commonly begins on older, lower leaves and can spread to stems and fruits.
+
+2. SYMPTOMS
+
+- Small brown or dark spots appear on older leaves.
+- Spots gradually become larger.
+- Circular concentric rings develop inside the spots, creating a target-like appearance.
+- Yellow areas may surround the infected spots.
+- Severely infected leaves turn brown and fall off.
+- Dark, sunken lesions may develop on stems and fruits.
+
+3. FAVORABLE CONDITIONS
+
+- Warm temperatures.
+- High humidity.
+- Rainfall and heavy dew.
+- Prolonged leaf wetness.
+- Poor air circulation around plants.
+
+4. DISEASE SPREAD
+
+The disease can survive in infected plant debris and soil. Its spores can spread through wind, rain splashes, contaminated equipment, and infected transplants.
+
+5. MANAGEMENT AND TREATMENT
+
+- Remove infected leaves when symptoms appear.
+- Maintain sufficient spacing between tomato plants.
+- Use mulch to reduce soil splashing.
+- Water around the base of plants.
+- Avoid unnecessary wetting of leaves.
+- Remove infected plant debris after harvest.
+- Maintain healthy plant growth through appropriate watering and fertilization.
+- If fungicide treatment is necessary, use a product approved for tomatoes in the local area and follow its label instructions.
+
+6. PREVENTION
+
+- Use healthy seeds and transplants.
+- Maintain good air circulation.
+- Avoid overhead irrigation where possible.
+- Practice crop rotation.
+- Remove infected plant material.
+- Monitor older leaves regularly for early symptoms.
+
+7. IMPORTANT NOTE
+
+Early Blight symptoms can resemble other tomato leaf diseases. A visual prediction alone should not be treated as a confirmed laboratory diagnosis. If symptoms are unclear, seek advice from an agricultural specialist.
+
+SOURCES
+
+1. University of Maryland Extension:
+https://extension.umd.edu/resource/early-blight-tomatoes
+
+2. University of Minnesota Extension:
+https://extension.umn.edu/agriculture/specialty-crops/vegetable-farming/disease-management/early-blight-in-tomato-and-potato
+
+3. Colorado State University Extension:
+https://extension.colostate.edu/resource/tomato-early-blight/
+
+10. MANAGEMENT AND TREATMENT
+
+CULTURAL MANAGEMENT
+
+- Remove infected leaves when symptoms appear to help reduce disease spread.
+- Avoid removing more than one-third of the plant's leaves at once.
+- Water near the plant base instead of wetting the leaves.
+- Use mulch to reduce soil and water splashing onto lower leaves.
+- Maintain sufficient spacing between plants to improve air circulation.
+- Stake or support tomato plants to keep leaves away from soil.
+- Clean pruning tools after working with infected plants.
+- Remove infected plant debris after harvesting.
+- Practice crop rotation to reduce disease buildup in the soil.
+
+FUNGICIDE MANAGEMENT
+
+- Fungicides may help manage early blight when cultural practices alone are insufficient.
+- Fungicides are generally more effective as preventive protection than as a cure for severely infected leaves.
+- Only use products legally registered for tomatoes and the intended disease in your location.
+- Always follow the product label, safety precautions, application instructions, and pre-harvest interval.
+- Seek advice from a local agricultural extension specialist before selecting a pesticide.
+
+IMPORTANT NOTE
+
+Management practices can reduce disease development, but they do not guarantee complete elimination of early blight.

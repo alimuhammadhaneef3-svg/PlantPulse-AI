@@ -1,0 +1,130 @@
+
+DISEASE/DISORDER: Tomato Flower Drop
+
+CATEGORY: Tomato Plant Physiological Disorder
+
+
+1. OVERVIEW
+
+Tomato flower drop, also called blossom drop, occurs when
+tomato flowers dry up and fall from the plant without
+developing into fruits.
+
+It is generally associated with environmental stress,
+unsuccessful pollination, and unsuitable growing conditions.
+
+Flower drop is not necessarily caused by an infectious
+disease or insect pest.
+
+
+2. COMMON CAUSES
+
+Common factors associated with tomato flower drop include:
+
+- Excessively high daytime temperatures.
+- Very high or very low nighttime temperatures.
+- Unsuitable humidity conditions.
+- Poor pollination.
+- Inconsistent soil moisture or drought stress.
+- Excessive nitrogen fertilization.
+- Other environmental and plant stresses.
+
+Several factors may contribute at the same time.
+
+
+3. TEMPERATURE STRESS
+
+Temperature extremes can interfere with pollen development,
+pollen viability, and successful fruit formation.
+
+- Daytime temperatures above approximately 85–90°F
+  (29–32°C) can reduce successful fruit setting.
+- Nighttime temperatures above approximately 70–75°F
+  (21–24°C) can interfere with pollination.
+- Nighttime temperatures below approximately 55°F
+  (13°C) can also reduce successful fruit setting.
+
+These are general guidance ranges, not universal
+thresholds for every tomato variety or growing condition.
+
+
+4. POLLINATION PROBLEMS
+
+Tomato flowers contain both male and female reproductive
+parts and are generally self-pollinating.
+
+However, pollen must move from the anther to the stigma
+for successful fertilization.
+
+Wind or physical vibration helps release tomato pollen.
+
+High humidity, unsuitable temperatures, and insufficient
+flower movement can interfere with successful pollination.
+
+Unpollinated flowers may dry up and fall without producing fruit.
+
+
+5. WATER AND NUTRITIONAL STRESS
+
+Insufficient water can stress tomato plants and contribute
+to flower drop.
+
+Excessive nitrogen fertilization may encourage excessive
+leaf and stem growth at the expense of fruit production.
+
+Both insufficient and excessive nutrient or water conditions
+can negatively affect plant development.
+
+Avoid making fertilizer or irrigation changes without
+considering soil conditions and plant requirements.
+
+
+6. MANAGEMENT AND PREVENTION
+
+- Maintain consistent soil moisture.
+- Avoid allowing plants to experience prolonged drought.
+- Use mulch to help conserve soil moisture.
+- Monitor daytime and nighttime temperatures.
+- Provide suitable ventilation where plants are grown
+  under protected structures.
+- Avoid excessive nitrogen fertilization.
+- Maintain balanced plant nutrition.
+- Gentle plant vibration can help release pollen when
+  natural air movement is insufficient.
+- Consult a local agricultural specialist when flower
+  drop continues or its cause is unclear.
+
+
+7. IMPORTANT NOTE
+
+Flower drop can have multiple causes.
+
+The presence of flower drop alone does not confirm
+a particular disease or nutrient deficiency.
+
+A visual leaf-disease prediction cannot establish
+the cause of flower drop.
+
+Further information about temperature, watering,
+fertilization, and growing conditions may be required
+to identify the likely cause.
+
+Seek advice from an agricultural specialist when necessary.
+
+
+8. AGRICULTURAL REFERENCES
+
+1. University of Saskatchewan:
+https://gardening.usask.ca/articles-and-lists/articles-disorders/disorder-blossom-drop-in-tomatoes.php
+
+2. Oklahoma State University Extension:
+https://extension.okstate.edu/fact-sheets/common-diseases-of-tomatoes-part-iii-non-infectious-diseases
+
+3. University of Maryland Extension:
+https://extension.umd.edu/resource/problems-pollination-high-tunnel-tomatoes
+
+4. Mississippi State University Extension:
+https://extension.msstate.edu/publications/tomato-troubles-common-problems-tomatoes?page=9
+
+5. University of Minnesota Extension:
+https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/yard-and-garden-problems/how-excessive-heat-affects-vegetable-garden

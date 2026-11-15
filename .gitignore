@@ -1,0 +1,36 @@
+# Dataset
+dataset/
+
+# Trained models
+models/
+*.keras
+*.h5
+*.gguf
+*.weights.h5
+
+# ChromaDB
+chroma_db/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment variables and secrets
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.log
+*.tmp
